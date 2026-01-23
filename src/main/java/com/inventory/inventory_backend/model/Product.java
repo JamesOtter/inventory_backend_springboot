@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder                        // Used to create data into database
 @Entity                         // Indicate that the class is a persistent Java class
 @Table(name = "products")
 public class Product {
