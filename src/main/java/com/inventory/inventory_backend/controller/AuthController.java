@@ -1,5 +1,6 @@
 package com.inventory.inventory_backend.controller;
 
+import com.inventory.inventory_backend.model.ERole;
 import com.inventory.inventory_backend.model.User;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.JwtUtils;
@@ -39,6 +40,11 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        if(user.getRole() == null) {
+            user.setRole(ERole.ROLE_USER);
+        }
+
         userRepository.save(user);
 
         return "User registered successfully";
