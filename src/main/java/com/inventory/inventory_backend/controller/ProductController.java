@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")     // declare that all url in controller start with /api
-@CrossOrigin("http://localhost:5173/")
+@CrossOrigin("http://localhost:5173")
 public class ProductController {
 
     @Autowired      // to inject repository bean to local variable
