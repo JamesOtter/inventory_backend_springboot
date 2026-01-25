@@ -1,10 +1,15 @@
 package com.inventory.inventory_backend.controller;
 
+import com.inventory.inventory_backend.dto.LoginRequest;
+import com.inventory.inventory_backend.dto.RegisterRequest;
+import com.inventory.inventory_backend.exception.FieldValidationException;
 import com.inventory.inventory_backend.model.ERole;
 import com.inventory.inventory_backend.model.User;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.JwtUtils;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -29,43 +34,47 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // @Valid - will do the validation in DTO and throw exception ('MethodArgumentNotValidException')
     @PostMapping("/register")
-    public String register(@RequestBody User user)
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request)
     {
-        if(user.getEmail() == null || user.getPassword() == null || user.getUsername() == null) {
-            return "Email, username and password are required";
+        String email = request.getEmail();
+        String username = request.getUsername();
+
+        if(userRepository.existsByUsername(username)) {
+            throw new FieldValidationException("username", "Username is already in use");
         }
-        if(userRepository.existsByEmail(user.getEmail())) {
-            return "Email already exists";
+        if(userRepository.existsByEmail(email)) {
+            throw new FieldValidationException("email", "Email is already in use");
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        if(user.getRole() == null) {
-            user.setRole(ERole.ROLE_USER);
-        }
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(ERole.ROLE_USER);
 
         userRepository.save(user);
 
-        return "User registered successfully";
+        return ResponseEntity.ok("User Register Successfully");
     }
 
     @PostMapping("/login")
-    public Map<String, String> login(@RequestBody Map<String, String> request){
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request){
 
-        String email = request.get("email");
-        String password = request.get("password");
+        String email = request.getEmail();
+        String password = request.getPassword();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new FieldValidationException("general", "Invalid credentials"));
 
         if(!passwordEncoder.matches(password, user.getPassword())){
-            throw new RuntimeException("Invalid credentials");
+            throw new FieldValidationException("general", "Invalid credentials");
         }
 
         // Generate JWT
         String token = jwtUtil.generateToken(user.getEmail());
 
-        return Map.of("token", token);
+        return ResponseEntity.ok(Map.of("token", token));
     }
 }
