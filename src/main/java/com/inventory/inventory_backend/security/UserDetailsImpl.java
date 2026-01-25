@@ -15,6 +15,7 @@ public class UserDetailsImpl implements UserDetails {
         this.user = user;
     }
 
+    // This is where the Spring Boot know who the user is
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(user.getRole().name()));
