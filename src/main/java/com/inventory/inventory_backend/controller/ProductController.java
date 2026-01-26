@@ -27,10 +27,14 @@ public class ProductController {
     private UserRepository userRepository;
 
     @GetMapping("/products")
-    public List<Product> getProduct(@AuthenticationPrincipal UserDetailsImpl userDetails){
+    public List<Product> getProduct(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestParam(required = false) String keyword){
         Long userId = userDetails.getId();
 
-        return productRepository.findByUserId(userId);
+        if(keyword == null || keyword.isBlank()){
+            return productRepository.findByUserId(userId);
+        }
+
+        return productRepository.findByUserIdAndNameContainingIgnoreCase(userId, keyword);
     }
 
     @PostMapping("/products")

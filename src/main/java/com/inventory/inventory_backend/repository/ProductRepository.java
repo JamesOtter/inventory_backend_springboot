@@ -9,6 +9,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByUserId(Long userId);
 
+    List<Product> findByUserIdAndNameContainingIgnoreCase(Long userId, String keyword);
+
     // Jpa repository methods (can be used directly)
     // save()
     // findOne()
