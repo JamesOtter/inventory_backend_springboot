@@ -1,0 +1,24 @@
+package com.inventory.inventory_backend.dto;
+
+import jakarta.validation.constraints.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+public class ProductUpdateRequest {
+
+    @Size(max = 100, message = "Product name must not exceed 100 characters")
+    private String name;
+
+    @Size(max = 500, message = "Description must not exceed 500 characters")
+    private String description;
+
+    @Min(value = 0, message = "Quantity cannot be negative")
+    private Integer quantity;
+
+    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    private BigDecimal price;
+}

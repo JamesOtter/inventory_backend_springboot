@@ -30,6 +30,10 @@ public class Product {
     @Column(name = "price", nullable = false)
     private BigDecimal price;
 
+    @ManyToOne(fetch = FetchType.LAZY)                  // Many products belong to one user (Lazy avoid loading the User every time)
+    @JoinColumn(name = "user_id", nullable = false)     // foreign key column
+    private User user;                                  // Link to User
+
 
     // All code below was comment because of using Lombok, thus no need to do it all by myself
 //    // Constructor

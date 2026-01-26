@@ -1,7 +1,9 @@
 package com.inventory.inventory_backend;
 
 import com.inventory.inventory_backend.model.Product;
+import com.inventory.inventory_backend.model.User;
 import com.inventory.inventory_backend.repository.ProductRepository;
+import com.inventory.inventory_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -19,13 +21,20 @@ public class InventoryBackendApplication implements CommandLineRunner {
 	@Autowired
 	private ProductRepository productRepository;
 
+	@Autowired
+	private UserRepository userRepository;
+
 	@Override
 	public void run(String... args) throws Exception {
+		User user = userRepository.findById(1L)
+				.orElseThrow(() -> new RuntimeException("user not found"));
+
 		Product product1 = Product.builder()
 				.name("Laptop")
 				.description("14 inch business laptop")
 				.price(new BigDecimal("3500.00"))
 				.quantity(10)
+				.user(user)
 				.build();
 
 		Product product2 = Product.builder()
@@ -33,6 +42,7 @@ public class InventoryBackendApplication implements CommandLineRunner {
 				.description("Wireless mouse")
 				.price(new BigDecimal("30.00"))
 				.quantity(50)
+				.user(user)
 				.build();
 
 		Product product3 = Product.builder()
@@ -40,6 +50,7 @@ public class InventoryBackendApplication implements CommandLineRunner {
 				.description("Mechanical keyboard")
 				.price(new BigDecimal("200.00"))
 				.quantity(20)
+				.user(user)
 				.build();
 
 //		productRepository.save(product1);
