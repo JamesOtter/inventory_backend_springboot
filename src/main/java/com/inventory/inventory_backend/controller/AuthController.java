@@ -7,10 +7,12 @@ import com.inventory.inventory_backend.model.ERole;
 import com.inventory.inventory_backend.model.User;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.JwtUtils;
+import com.inventory.inventory_backend.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -76,5 +78,10 @@ public class AuthController {
         String token = jwtUtil.generateToken(user.getEmail());
 
         return ResponseEntity.ok(Map.of("token", token));
+    }
+
+    @GetMapping("/validate-token")
+    public ResponseEntity<?> validateToken(@AuthenticationPrincipal UserDetailsImpl userDetails){
+        return ResponseEntity.ok("User is validate");
     }
 }
