@@ -1,6 +1,7 @@
 package com.inventory.inventory_backend.controller;
 
 import com.inventory.inventory_backend.dto.ProductRequest;
+import com.inventory.inventory_backend.dto.ProductResponse;
 import com.inventory.inventory_backend.dto.ProductUpdateRequest;
 import com.inventory.inventory_backend.exception.FieldValidationException;
 import com.inventory.inventory_backend.model.Product;
@@ -14,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")     // declare that all url in controller start with /api
@@ -27,14 +29,20 @@ public class ProductController {
     private UserRepository userRepository;
 
     @GetMapping("/products")
-    public List<Product> getProduct(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestParam(required = false) String keyword){
+    public List<ProductResponse> getProduct(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestParam(required = false) String keyword){
         Long userId = userDetails.getId();
 
+        List<Product> products;
+
         if(keyword == null || keyword.isBlank()){
-            return productRepository.findByUserId(userId);
+            products = productRepository.findByUserId(userId);
+        }else{
+            products = productRepository.findByUserIdAndNameContainingIgnoreCase(userId, keyword);
         }
 
-        return productRepository.findByUserIdAndNameContainingIgnoreCase(userId, keyword);
+        // stream() - process each product in products, one by one
+        // map() - transform each element to ProductResponse
+        return products.stream().map(ProductResponse::new).toList();
     }
 
     @PostMapping("/products")
