@@ -13,6 +13,7 @@ public class ProductResponse {
     private String description;
     private int quantity;
     private BigDecimal price;
+    private String imageUrl;
 
     private Long userId;
     private String username;
@@ -25,5 +26,11 @@ public class ProductResponse {
         this.price = product.getPrice();
         this.userId = product.getUser().getId();
         this.username = product.getUser().getUsername();
+
+        if(product.getImageName() != null && !product.getImageName().isEmpty()){
+            this.imageUrl = "http://localhost:8080/uploads/products/" + product.getImageName();
+        } else {
+            this.imageUrl = "http://localhost:8080/uploads/products/default.png";
+        }
     }
 }
