@@ -13,8 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -46,12 +53,18 @@ public class ProductController {
     }
 
     @PostMapping("/products")
-    public ResponseEntity<?> createProduct(@Valid @RequestBody ProductRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails){
+    public ResponseEntity<?> createProduct(@Valid @ModelAttribute ProductRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails){
+
+        MultipartFile image = request.getImage();
+        validateImage(image);
+        String imageName = storeProductImage(image);
+
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .quantity(request.getQuantity())
                 .price(request.getPrice())
+                .imageName(imageName)
                 .user(userRepository.getReferenceById(userDetails.getId()))
                 .build();
 
@@ -99,5 +112,49 @@ public class ProductController {
         productRepository.deleteById(id);
 
         return ResponseEntity.ok("Product Deleted Successfully");
+    }
+
+    private void validateImage(MultipartFile image){
+        if(image == null || image.isEmpty()){
+            return;
+        }
+
+        // Max size: 5MB
+        long maxSize = 5 * 1024 * 1024;
+        if(image.getSize() > maxSize){
+            throw new FieldValidationException("image", "Image size must be <= 5MB");
+        }
+
+        // Check Content type
+        List<String> allowedTypes = List.of(
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+                "image/jpg"
+        );
+        if(!allowedTypes.contains(image.getContentType())){
+            throw new FieldValidationException("image", "Only JPG, PNG, JPEG, WEBP images are allowed");
+        }
+    }
+
+    private String storeProductImage(MultipartFile image){
+        if (image == null || image.isEmpty()) {
+            return null; // image is optional
+        }
+
+        try {
+            String uploadDir = "uploads/products/";
+            Files.createDirectories(Paths.get(uploadDir));
+
+            String imageName = UUID.randomUUID() + "_" + image.getOriginalFilename();
+            Path imagePath = Paths.get(uploadDir, imageName);
+
+            Files.copy(image.getInputStream(), imagePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return imageName;
+
+        } catch (IOException e) {
+            throw new FieldValidationException("image", "Failed to store product image");
+        }
     }
 }

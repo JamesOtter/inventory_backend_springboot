@@ -30,6 +30,9 @@ public class Product {
     @Column(name = "price", nullable = false)
     private BigDecimal price;
 
+    @Column(name = "imageName")
+    private String imageName = "default.png";
+
     @ManyToOne(fetch = FetchType.LAZY)                  // Many products belong to one user (Lazy avoid loading the User every time)
     @JoinColumn(name = "user_id", nullable = false)     // foreign key column
     private User user;                                  // Link to User
