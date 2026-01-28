@@ -74,12 +74,23 @@ public class ProductController {
     }
 
     @PutMapping("/product/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable("id") Long id, @Valid @RequestBody ProductUpdateRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails){
+    public ResponseEntity<ProductResponse> updateProduct(@PathVariable("id") Long id, @Valid @ModelAttribute ProductUpdateRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails){
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new FieldValidationException("general", "Product not found"));
 
         if(!product.getUser().getId().equals(userDetails.getId())){
             throw new FieldValidationException("general", "You are not allowed to update this product");
+        }
+
+        MultipartFile image = request.getImage();
+
+        if (image != null && !image.isEmpty()) {
+            deleteOldImage(product.getImageName());
+
+            validateImage(image);
+            String imageName = storeProductImage(image);
+
+            product.setImageName(imageName);
         }
 
         if(request.getName() != null){
@@ -97,7 +108,7 @@ public class ProductController {
 
         productRepository.save(product);
 
-        return ResponseEntity.ok("Product Updated Successfully");
+        return ResponseEntity.ok(new ProductResponse(product));
     }
 
     @DeleteMapping("/product/{id}")
@@ -139,7 +150,7 @@ public class ProductController {
 
     private String storeProductImage(MultipartFile image){
         if (image == null || image.isEmpty()) {
-            return null; // image is optional
+            return "default.png"; // image is optional
         }
 
         try {
@@ -153,6 +164,19 @@ public class ProductController {
 
             return imageName;
 
+        } catch (IOException e) {
+            throw new FieldValidationException("image", "Failed to store product image");
+        }
+    }
+
+    private void deleteOldImage(String image){
+        if(image.equals("default.png")){
+            return;
+        }
+
+        try {
+            Path oldImagePath = Paths.get("uploads/products/" + image);
+            Files.deleteIfExists(oldImagePath);
         } catch (IOException e) {
             throw new FieldValidationException("image", "Failed to store product image");
         }

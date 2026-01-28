@@ -3,6 +3,7 @@ package com.inventory.inventory_backend.dto;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
@@ -21,4 +22,6 @@ public class ProductUpdateRequest {
 
     @DecimalMin(value = "0.01", message = "Price must be greater than 0")
     private BigDecimal price;
+
+    private MultipartFile image;
 }
