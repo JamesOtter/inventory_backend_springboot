@@ -9,6 +9,8 @@ import com.inventory.inventory_backend.repository.ProductRepository;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.UserDetailsImpl;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,7 +24,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")     // declare that all url in controller start with /api
@@ -34,6 +35,9 @@ public class ProductController {
 
     @Autowired
     private UserRepository userRepository;
+
+    // For logging purpose
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     @GetMapping("/products")
     public List<ProductResponse> getProduct(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestParam(required = false) String keyword){
@@ -55,6 +59,9 @@ public class ProductController {
     @PostMapping("/products")
     public ResponseEntity<?> createProduct(@Valid @ModelAttribute ProductRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails){
 
+        // Logging (API Entry)
+        log.info("User {} is creating a product", userDetails.getId());
+
         MultipartFile image = request.getImage();
         validateImage(image);
         String imageName = storeProductImage(image);
@@ -68,17 +75,31 @@ public class ProductController {
                 .user(userRepository.getReferenceById(userDetails.getId()))
                 .build();
 
-        productRepository.save(product);
+        try{
+            productRepository.save(product);
+        } catch (Exception e) {
+            log.error("Failed to save product {} by user {}", product.getName(), userDetails.getId(), e);
+            throw new FieldValidationException("general", "Failed to create product");
+        };
+
+        log.info("Product created successfully with ID={} by user {}", product.getId(), userDetails.getId());
 
         return ResponseEntity.ok("Product Created Successfully");
     }
 
     @PutMapping("/product/{id}")
     public ResponseEntity<ProductResponse> updateProduct(@PathVariable("id") Long id, @Valid @ModelAttribute ProductUpdateRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails){
+
+        log.info("User {} updating product {}", userDetails.getId(), id);
+
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new FieldValidationException("general", "Product not found"));
+                .orElseThrow(() -> {
+                    log.warn("Product {} not found during update", id);
+                    return new FieldValidationException("general", "Product not found");
+                });
 
         if(!product.getUser().getId().equals(userDetails.getId())){
+            log.warn("User {} try to update product {} which is not allowed",userDetails.getId(), id);
             throw new FieldValidationException("general", "You are not allowed to update this product");
         }
 
@@ -106,21 +127,42 @@ public class ProductController {
             product.setPrice(request.getPrice());
         }
 
-        productRepository.save(product);
+        try{
+            productRepository.save(product);
+        } catch (Exception e) {
+            log.error("Failed to update product {} by user {}", id, userDetails.getId(), e);
+            throw new FieldValidationException("general", "Failed to update product");
+        };
+
+        log.info("Product {} updated successfully", id);
 
         return ResponseEntity.ok(new ProductResponse(product));
     }
 
     @DeleteMapping("/product/{id}")
     public ResponseEntity<?> deleteProduct(@PathVariable("id") Long id, @AuthenticationPrincipal UserDetailsImpl userDetails){
+
+        log.info("User {} deleting product {}", userDetails.getId(), id);
+
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new FieldValidationException("general", "Product not found"));
+                .orElseThrow(() -> {
+                    log.warn("Product {} not found during delete", id);
+                    return new FieldValidationException("general", "Product not found");
+                });
 
         if(!product.getUser().getId().equals(userDetails.getId())){
+            log.warn("User {} try to delete product {} which is not allowed",userDetails.getId(), id);
             throw new FieldValidationException("general", "You are not allowed to delete this product");
         }
 
-        productRepository.deleteById(id);
+        try{
+            productRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error("Failed to delete product {} by user {}", id, userDetails.getId(), e);
+            throw new FieldValidationException("general", "Failed to delete product");
+        };
+
+        log.info("Product {} deleted successfully", id);
 
         return ResponseEntity.ok("Product Deleted Successfully");
     }
