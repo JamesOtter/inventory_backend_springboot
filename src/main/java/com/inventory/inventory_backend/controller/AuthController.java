@@ -1,14 +1,18 @@
 package com.inventory.inventory_backend.controller;
 
 import com.inventory.inventory_backend.dto.LoginRequest;
+import com.inventory.inventory_backend.dto.LoginResponse;
 import com.inventory.inventory_backend.dto.RegisterRequest;
 import com.inventory.inventory_backend.exception.FieldValidationException;
 import com.inventory.inventory_backend.exception.GlobalException;
+import com.inventory.inventory_backend.model.EAction;
+import com.inventory.inventory_backend.model.EEntity;
 import com.inventory.inventory_backend.model.ERole;
 import com.inventory.inventory_backend.model.User;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.JwtUtils;
 import com.inventory.inventory_backend.security.UserDetailsImpl;
+import com.inventory.inventory_backend.service.AuditLogService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,14 +35,16 @@ public class AuthController {
     private final JwtUtils jwtUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthenticationManager authenticationManager, JwtUtils jwtUtil, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthController(AuthenticationManager authenticationManager, JwtUtils jwtUtil, UserRepository userRepository, PasswordEncoder passwordEncoder, AuditLogService auditLogService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
     // @Valid - will do the validation in DTO and throw exception ('MethodArgumentNotValidException')
@@ -71,12 +77,13 @@ public class AuthController {
         };
 
         log.info("User registered successfully with id={}", user.getId());
+        auditLogService.log(user.getId(), EAction.CREATE, EEntity.USER, user.getId(), "Registered user: " + user.getUsername());
 
         return ResponseEntity.ok("User Register Successfully");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request){
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request){
 
         log.info("Login attempt for email={}", request.getEmail());
 
@@ -97,9 +104,18 @@ public class AuthController {
         // Generate JWT
         String token = jwtUtil.generateToken(user.getEmail());
 
-        log.info("Login successful for email={}", request.getEmail());
+        LoginResponse loginResponse = LoginResponse.builder()
+                .token(token)
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .build();
 
-        return ResponseEntity.ok(Map.of("token", token));
+        log.info("Login successful for email={}", request.getEmail());
+        auditLogService.log(user.getId(), EAction.LOGIN, EEntity.USER, user.getId(), "Login user: " + user.getUsername());
+
+        return ResponseEntity.ok(loginResponse);
     }
 
     @GetMapping("/validate-token")
