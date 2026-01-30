@@ -4,10 +4,14 @@ import com.inventory.inventory_backend.dto.ProductRequest;
 import com.inventory.inventory_backend.dto.ProductResponse;
 import com.inventory.inventory_backend.dto.ProductUpdateRequest;
 import com.inventory.inventory_backend.exception.FieldValidationException;
+import com.inventory.inventory_backend.model.EAction;
+import com.inventory.inventory_backend.model.EEntity;
 import com.inventory.inventory_backend.model.Product;
+import com.inventory.inventory_backend.repository.AuditLogRepository;
 import com.inventory.inventory_backend.repository.ProductRepository;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.UserDetailsImpl;
+import com.inventory.inventory_backend.service.AuditLogService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +39,9 @@ public class ProductController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     // For logging purpose
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
@@ -83,6 +90,7 @@ public class ProductController {
         };
 
         log.info("Product created successfully with ID={} by user {}", product.getId(), userDetails.getId());
+        auditLogService.log(userDetails.getId(), EAction.CREATE, EEntity.PRODUCT, product.getId(), "Created product: " + product.getName());
 
         return ResponseEntity.ok("Product Created Successfully");
     }
@@ -135,6 +143,7 @@ public class ProductController {
         };
 
         log.info("Product {} updated successfully", id);
+        auditLogService.log(userDetails.getId(), EAction.UPDATE, EEntity.PRODUCT, product.getId(), "Updated product: " + product.getName());
 
         return ResponseEntity.ok(new ProductResponse(product));
     }
@@ -163,6 +172,7 @@ public class ProductController {
         };
 
         log.info("Product {} deleted successfully", id);
+        auditLogService.log(userDetails.getId(), EAction.DELETE, EEntity.PRODUCT, product.getId(), "Deleted product: " + product.getName());
 
         return ResponseEntity.ok("Product Deleted Successfully");
     }
