@@ -7,7 +7,6 @@ import com.inventory.inventory_backend.exception.FieldValidationException;
 import com.inventory.inventory_backend.model.EAction;
 import com.inventory.inventory_backend.model.EEntity;
 import com.inventory.inventory_backend.model.Product;
-import com.inventory.inventory_backend.repository.AuditLogRepository;
 import com.inventory.inventory_backend.repository.ProductRepository;
 import com.inventory.inventory_backend.repository.UserRepository;
 import com.inventory.inventory_backend.security.UserDetailsImpl;
@@ -16,6 +15,10 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,20 +51,27 @@ public class ProductController {
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     @GetMapping("/products")
-    public List<ProductResponse> getProduct(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestParam(required = false) String keyword){
+    public ResponseEntity<Page<ProductResponse>> getProducts(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
         Long userId = userDetails.getId();
 
-        List<Product> products;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<Product> products;
 
         if(keyword == null || keyword.isBlank()){
-            products = productRepository.findByUserId(userId);
+            products = productRepository.findByUserId(userId, pageable);
         }else{
-            products = productRepository.findByUserIdAndNameContainingIgnoreCase(userId, keyword);
+            products = productRepository.findByUserIdAndNameContainingIgnoreCase(userId, keyword, pageable);
         }
 
         // stream() - process each product in products, one by one
         // map() - transform each element to ProductResponse
-        return products.stream().map(ProductResponse::new).toList();
+        return ResponseEntity.ok(products.map(ProductResponse::new));
     }
 
     @PostMapping("/products")
@@ -80,6 +91,7 @@ public class ProductController {
                 .price(request.getPrice())
                 .imageName(imageName)
                 .user(userRepository.getReferenceById(userDetails.getId()))
+                .createdAt(LocalDateTime.now())
                 .build();
 
         try{

@@ -4,6 +4,7 @@ import com.inventory.inventory_backend.model.Product;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 public class ProductResponse {
@@ -14,6 +15,7 @@ public class ProductResponse {
     private int quantity;
     private BigDecimal price;
     private String imageUrl;
+    private LocalDateTime createdAt;
 
     private Long userId;
     private String username;
@@ -24,6 +26,7 @@ public class ProductResponse {
         this.description = product.getDescription();
         this.quantity = product.getQuantity();
         this.price = product.getPrice();
+        this.createdAt = product.getCreatedAt();
         this.userId = product.getUser().getId();
         this.username = product.getUser().getUsername();
 
