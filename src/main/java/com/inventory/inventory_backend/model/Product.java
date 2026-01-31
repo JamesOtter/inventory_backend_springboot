@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -37,6 +38,8 @@ public class Product {
     @JoinColumn(name = "user_id", nullable = false)     // foreign key column
     private User user;                                  // Link to User
 
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
     // All code below was comment because of using Lombok, thus no need to do it all by myself
 //    // Constructor
