@@ -3,13 +3,14 @@ package com.inventory.inventory_backend.controller;
 import com.inventory.inventory_backend.model.AuditLog;
 import com.inventory.inventory_backend.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/audit-logs")
@@ -21,7 +22,10 @@ public class AuditLogController {
     private final AuditLogService auditLogService;
 
     @GetMapping
-    public List<AuditLog> getAllAuditLogs() {
-        return auditLogService.getAllLogs();
+    public ResponseEntity<Page<AuditLog>> getAllAuditLogs(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return ResponseEntity.ok(auditLogService.getAllLogs(pageable));
     }
 }

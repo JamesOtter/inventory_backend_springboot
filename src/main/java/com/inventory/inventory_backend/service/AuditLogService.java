@@ -5,6 +5,8 @@ import com.inventory.inventory_backend.model.EAction;
 import com.inventory.inventory_backend.model.EEntity;
 import com.inventory.inventory_backend.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -36,9 +38,7 @@ public class AuditLogService {
         auditLogRepository.save(log);
     }
 
-    public List<AuditLog> getAllLogs() {
-        return auditLogRepository.findAll(
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
+    public Page<AuditLog> getAllLogs(Pageable pageable) {
+        return auditLogRepository.findAll(pageable);
     }
 }
